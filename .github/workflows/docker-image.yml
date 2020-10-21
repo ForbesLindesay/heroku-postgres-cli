@@ -1,0 +1,25 @@
+name: Publish Docker image
+on:
+  push:
+    branches:
+      - master
+jobs:
+  push_to_registry:
+    name: Push Docker image to Docker Hub
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v2
+      - name: build
+        run: docker build --tag=forbeslindesay/heroku-postgres-cli:latest .
+      - name: login
+        run: echo ${{ secrets.DOCKERHUB_PASSWORD }} | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
+      - name: Push the latest
+        run: docker push forbeslindesay/heroku-postgres-cli:latest
+      - name: Get versions
+        id: versions
+        run: bash variables.sh
+      - name: Tag the version
+        run: docker tag forbeslindesay/heroku-postgres-cli:latest forbeslindesay/heroku-postgres-cli:${{steps.versions.outputs.heroku}}-${{steps.versions.outputs.postgres}}
+      - name: Push the latest
+        run: docker push forbeslindesay/heroku-postgres-cli:${{steps.versions.outputs.heroku}}-${{steps.versions.outputs.postgres}}
