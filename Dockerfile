@@ -1,4 +1,5 @@
-FROM postgres:12.4
+ARG POSTGRES=postgres:latest
+FROM $POSTGRES
 
 RUN apt update && apt upgrade
 RUN apt install -y curl

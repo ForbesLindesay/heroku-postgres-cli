@@ -6,8 +6,8 @@ on:
     branches:
       - master
 jobs:
-  push_to_registry:
-    name: Push Docker image to Docker Hub
+  push_latest:
+    name: Push latest
     runs-on: ubuntu-latest
     steps:
       - name: login
@@ -21,10 +21,27 @@ jobs:
         run: docker build --tag=forbeslindesay/heroku-postgres-cli:latest .
       - name: Push the latest
         run: docker push forbeslindesay/heroku-postgres-cli:latest
+
+  push_version:
+    strategy:
+      matrix:
+        postgres: ['9.6', '9', '10.14', '10', '11.9', '11', '12.4', '12', '13.0', '13']
+    name: Push version tag
+    runs-on: ubuntu-latest
+    steps:
+      - name: login
+        run: echo $DOCKERHUB_PASSWORD | docker login -u $DOCKERHUB_USERNAME --password-stdin
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
+      - name: Check out the repo
+        uses: actions/checkout@v2
+      - name: build
+        run: docker build --build-arg 'POSTGRES=postgres:${{ matrix.postgres }}' --tag=forbeslindesay/heroku-postgres-cli:latest .
       - name: Get versions
         id: versions
         run: bash variables.sh
       - name: Tag the version
-        run: docker tag forbeslindesay/heroku-postgres-cli:latest forbeslindesay/heroku-postgres-cli:${{steps.versions.outputs.heroku}}-${{steps.versions.outputs.postgres}}
+        run: docker tag forbeslindesay/heroku-postgres-cli:latest forbeslindesay/heroku-postgres-cli:${{steps.versions.outputs.heroku}}-${{ matrix.postgres }}
       - name: Push the version
-        run: docker push forbeslindesay/heroku-postgres-cli:${{steps.versions.outputs.heroku}}-${{steps.versions.outputs.postgres}}
+        run: docker push forbeslindesay/heroku-postgres-cli:${{steps.versions.outputs.heroku}}-${{ matrix.postgres }}
